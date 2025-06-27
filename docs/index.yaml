@@ -11,7 +11,7 @@ entries:
       artifacthub.io/operator: "true"
     apiVersion: v2
     appVersion: v0.72.0
-    created: "2025-06-27T14:48:30.0500607+09:00"
+    created: "2025-06-27T14:53:38.0885009+09:00"
     dependencies:
     - condition: crds.enabled
       name: crds
@@ -68,6 +68,6 @@ entries:
     - https://github.com/prometheus-operator/kube-prometheus
     type: application
     urls:
-    - https://zzzcolcol.github.io/helm/docs/kube-prometheus-stack-57.0.2.tgz
+    - https://zzzcolcol.github.io/helm/kube-prometheus-stack-57.0.2.tgz
     version: 57.0.2
-generated: "2025-06-27T14:48:30.0246874+09:00"
+generated: "2025-06-27T14:53:38.065211+09:00"
