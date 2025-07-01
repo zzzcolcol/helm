@@ -31,16 +31,7 @@ commonLabels: {}
 ## Install Prometheus Operator CRDs
 ##
 crds:
-  enabled: false
-
-## custom Rules to override "for" and "severity" in defaultRules
-##
-customRules: {}
-  # AlertmanagerFailedReload:
-  #   for: 3m
-  # AlertmanagerMembersInconsistent:
-  #   for: 5m
-  #   severity: "warning"
+  enabled: true
 
 ## Create default rules for monitoring the cluster
 ##
@@ -557,16 +548,13 @@ alertmanager:
     ##
     type: ClusterIP
 
-  ## Configuration for creating a ServiceMonitor for AlertManager
+  ## If true, create a serviceMonitor for alertmanager
   ##
   serviceMonitor:
-    ## If true, a ServiceMonitor will be created for the AlertManager service.
-    ##
-    selfMonitor: true
-
     ## Scrape interval. If not set, the Prometheus default scrape interval is used.
     ##
     interval: ""
+    selfMonitor: true
 
     ## Additional labels
     ##
@@ -648,7 +636,7 @@ alertmanager:
     image:
       registry: quay.io
       repository: prometheus/alertmanager
-      tag: v0.27.0
+      tag: v0.26.0
       sha: ""
 
     ## If true then the user will be responsible to provide a secret with alertmanager configuration
@@ -660,10 +648,6 @@ alertmanager:
     ## Alertmanager Pods. The Secrets are mounted into /etc/alertmanager/secrets/.
     ##
     secrets: []
-
-    ## If false then the user will opt out of automounting API credentials.
-    ##
-    automountServiceAccountToken: true
 
     ## ConfigMaps is a list of ConfigMaps in the same namespace as the Alertmanager object, which shall be mounted into the Alertmanager Pods.
     ## The ConfigMaps are mounted into /etc/alertmanager/configmaps/.
@@ -750,14 +734,14 @@ alertmanager:
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/storage.md
     ##
     storage: {}
-    volumeClaimTemplate:
-      spec:
-        storageClassName: monitor-sc
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 10Gi
-        # selector: {}
+    # volumeClaimTemplate:
+    #   spec:
+    #     storageClassName: gluster
+    #     accessModes: ["ReadWriteOnce"]
+    #     resources:
+    #       requests:
+    #         storage: 50Gi
+    #     selector: {}
 
 
     ## The external URL the Alertmanager instances will be available under. This is necessary to generate correct URLs. This is necessary if Alertmanager is not served from root of a DNS name. string  false
@@ -967,7 +951,7 @@ grafana:
   ##
   defaultDashboardsEditable: true
 
-  adminPassword: "admin"
+  adminPassword: prom-operator
 
   rbac:
     ## If true, Grafana PSPs will be created
@@ -977,26 +961,19 @@ grafana:
   ingress:
     ## If true, Grafana Ingress will be created
     ##
-    enabled: true
+    enabled: false
 
     ## IngressClassName for Grafana Ingress.
     ## Should be provided if Ingress is enable.
     ##
-    ingressClassName: alb
+    # ingressClassName: nginx
 
     ## Annotations for Grafana Ingress
     ##
-    annotations: 
-      alb.ingress.kubernetes.io/scheme: internet-facing
-      alb.ingress.kubernetes.io/target-type: ip
-      alb.ingress.kubernetes.io/backend-protocol: HTTP
-      alb.ingress.kubernetes.io/group.name: monitoring
-      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
-      alb.ingress.kubernetes.io/healthcheck-path: /api/health
-      alb.ingress.kubernetes.io/success-codes: "200"
-    paths:
-      - path: /
-        pathType: Prefix
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+
     ## Labels to be added to the Ingress
     ##
     labels: {}
@@ -1009,7 +986,7 @@ grafana:
     hosts: []
 
     ## Path for grafana ingress
-    # path: /
+    path: /
 
     ## TLS configuration for grafana Ingress
     ## Secret must be manually created in the namespace
@@ -1031,10 +1008,6 @@ grafana:
   #   finalizers:
   #     - kubernetes.io/pvc-protection
 
-  serviceAccount:
-    create: true
-    autoMount: true
-
   sidecar:
     dashboards:
       enabled: true
@@ -1042,9 +1015,6 @@ grafana:
       labelValue: "1"
       # Allow discovery in all namespaces for dashboards
       searchNamespace: ALL
-
-      # Support for new table panels, when enabled grafana auto migrates the old table panels to newer table panels
-      enableNewTablePanelSyntax: false
 
       ## Annotations for Grafana dashboard configmaps
       ##
@@ -1496,15 +1466,6 @@ kubeControllerManager:
     ##
     proxyUrl: ""
 
-    ## port: Name of the port the metrics will be scraped from
-    ##
-    port: http-metrics
-
-    jobLabel: jobLabel
-    selector: {}
-    #  matchLabels:
-    #    component: kube-controller-manager
-
     ## Enable scraping kube-controller-manager over https.
     ## Requires proper certs (not self-signed) and delegated authentication/authorization checks.
     ## If null or unset, the value is determined dynamically based on target Kubernetes version.
@@ -1581,15 +1542,6 @@ coreDns:
     ##
     proxyUrl: ""
 
-    ## port: Name of the port the metrics will be scraped from
-    ##
-    port: http-metrics
-
-    jobLabel: jobLabel
-    selector: {}
-    #  matchLabels:
-    #    k8s-app: kube-dns
-
     ## MetricRelabelConfigs to apply to samples after scraping, but before ingestion.
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#relabelconfig
     ##
@@ -1655,11 +1607,6 @@ kubeDns:
     ## proxyUrl: URL of a proxy that should be used for scraping.
     ##
     proxyUrl: ""
-
-    jobLabel: jobLabel
-    selector: {}
-    #  matchLabels:
-    #    k8s-app: kube-dns
 
     ## MetricRelabelConfigs to apply to samples after scraping, but before ingestion.
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#relabelconfig
@@ -1772,15 +1719,6 @@ kubeEtcd:
     certFile: ""
     keyFile: ""
 
-    ## port: Name of the port the metrics will be scraped from
-    ##
-    port: http-metrics
-
-    jobLabel: jobLabel
-    selector: {}
-    #  matchLabels:
-    #    component: etcd
-
     ## MetricRelabelConfigs to apply to samples after scraping, but before ingestion.
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#relabelconfig
     ##
@@ -1864,15 +1802,6 @@ kubeScheduler:
     ##
     https: null
 
-    ## port: Name of the port the metrics will be scraped from
-    ##
-    port: http-metrics
-
-    jobLabel: jobLabel
-    selector: {}
-    #  matchLabels:
-    #    component: kube-scheduler
-
     ## Skip TLS certificate validation when scraping
     insecureSkipVerify: null
 
@@ -1951,15 +1880,6 @@ kubeProxy:
     ## proxyUrl: URL of a proxy that should be used for scraping.
     ##
     proxyUrl: ""
-
-    ## port: Name of the port the metrics will be scraped from
-    ##
-    port: http-metrics
-
-    jobLabel: jobLabel
-    selector: {}
-    #  matchLabels:
-    #    k8s-app: kube-proxy
 
     ## Enable scraping kube-proxy over https.
     ## Requires proper certs (not self-signed) and delegated authentication/authorization checks
@@ -2071,10 +1991,6 @@ nodeExporter:
     darwin:
       enabled: true
 
-  ## ForceDeployDashboard Create dashboard configmap even if nodeExporter deployment has been disabled
-  ##
-  forceDeployDashboards: false
-
 ## Configuration for prometheus-node-exporter subchart
 ##
 prometheus-node-exporter:
@@ -2157,16 +2073,9 @@ prometheus-node-exporter:
 prometheusOperator:
   enabled: true
 
-  ## Use '{{ template "kube-prometheus-stack.fullname" . }}-operator' by default
-  fullnameOverride: ""
-
   ## Number of old replicasets to retain ##
   ## The default value is 10, 0 will garbage-collect old replicasets ##
   revisionHistoryLimit: 10
-
-  ## Strategy of the deployment
-  ##
-  strategy: {}
 
   ## Prometheus-Operator v0.39.0 and later support TLS natively.
   ##
@@ -2205,10 +2114,6 @@ prometheusOperator:
       ## Number of replicas
       ##
       replicas: 1
-
-      ## Strategy of the deployment
-      ##
-      strategy: {}
 
       # Ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
       podDisruptionBudget: {}
@@ -2409,10 +2314,6 @@ prometheusOperator:
           drop:
             - ALL
 
-      ## If false then the user will opt out of automounting API credentials.
-      ##
-      automountServiceAccountToken: true
-
     patch:
       enabled: true
       image:
@@ -2522,7 +2423,6 @@ prometheusOperator:
   serviceAccount:
     create: true
     name: ""
-    automountServiceAccountToken: true
 
   ## Configuration for Prometheus operator service
   ##
@@ -2589,10 +2489,10 @@ prometheusOperator:
   ## Decrease log verbosity to errors only
   # logLevel: error
 
+  ## If true, the operator will create and maintain a service for scraping kubelets
+  ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/helm/prometheus-operator/README.md
+  ##
   kubeletService:
-    ## If true, the operator will create and maintain a service for scraping kubelets
-    ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/helm/prometheus-operator/README.md
-    ##
     enabled: true
     namespace: kube-system
     ## Use '{{ template "kube-prometheus-stack.fullname" . }}-kubelet' by default
@@ -2601,10 +2501,6 @@ prometheusOperator:
   ## Create a servicemonitor for the operator
   ##
   serviceMonitor:
-    ## If true, create a serviceMonitor for prometheus operator
-    ##
-    selfMonitor: true
-
     ## Labels for ServiceMonitor
     additionalLabels: {}
 
@@ -2634,6 +2530,7 @@ prometheusOperator:
 
     ## Scrape timeout. If not set, the Prometheus default scrape timeout is used.
     scrapeTimeout: ""
+    selfMonitor: true
 
     ## Metric relabel configs to apply to samples before ingestion.
     ##
@@ -2812,7 +2709,7 @@ prometheusOperator:
   thanosImage:
     registry: quay.io
     repository: thanos/thanos
-    tag: v0.34.1
+    tag: v0.34.0
     sha: ""
 
   ## Set a Label Selector to filter watched prometheus and prometheusAgent
@@ -2829,18 +2726,6 @@ prometheusOperator:
   ## Set a Field Selector to filter watched secrets
   ##
   secretFieldSelector: "type!=kubernetes.io/dockercfg,type!=kubernetes.io/service-account-token,type!=helm.sh/release.v1"
-
-  ## If false then the user will opt out of automounting API credentials.
-  ##
-  automountServiceAccountToken: true
-
-  ## Additional volumes
-  ##
-  extraVolumes: []
-
-  ## Additional volume mounts
-  ##
-  extraVolumeMounts: []
 
 ## Deploy a Prometheus instance
 ##
@@ -2887,7 +2772,6 @@ prometheus:
     create: true
     name: ""
     annotations: {}
-    automountServiceAccountToken: true
 
   # Service for thanos service discovery on sidecar
   # Enable this can make Thanos Query can use
@@ -2996,10 +2880,6 @@ prometheus:
 
     ## To be used with a proxy extraContainer port
     targetPort: 9090
-
-    ## Port for Prometheus Reloader to listen on
-    ##
-    reloaderWebPort: 8080
 
     ## List of IP addresses at which the Prometheus server service is available
     ## Ref: https://kubernetes.io/docs/user-guide/services/#external-ips
@@ -3231,13 +3111,10 @@ prometheus:
     volumes: []
 
   serviceMonitor:
-    ## If true, create a serviceMonitor for prometheus
-    ##
-    selfMonitor: true
-
     ## Scrape interval. If not set, the Prometheus default scrape interval is used.
     ##
     interval: ""
+    selfMonitor: true
 
     ## Additional labels
     ##
@@ -3361,7 +3238,7 @@ prometheus:
     image:
       registry: quay.io
       repository: prometheus/prometheus
-      tag: v2.50.1
+      tag: v2.49.1
       sha: ""
 
     ## Tolerations for use with node taints
@@ -3485,7 +3362,7 @@ prometheus:
     ## prometheus resource to be created with selectors based on values in the helm deployment,
     ## which will also match the servicemonitors created
     ##
-    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: true
 
     ## ServiceMonitors to be selected for target discovery.
     ## If {}, select all ServiceMonitors
@@ -3508,7 +3385,7 @@ prometheus:
     ## prometheus resource to be created with selectors based on values in the helm deployment,
     ## which will also match the podmonitors created
     ##
-    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: true
 
     ## PodMonitors to be selected for target discovery.
     ## If {}, select all PodMonitors
@@ -3677,15 +3554,17 @@ prometheus:
     ## Prometheus StorageSpec for persistent data
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/storage.md
     ##
-    storageSpec:
-      volumeClaimTemplate:
-        spec:
-          storageClassName: monitor-sc
-          accessModes: ["ReadWriteOnce"]
-          resources:
-           requests:
-             storage: 10Gi
-      #  selector: {}
+    storageSpec: {}
+    ## Using PersistentVolumeClaim
+    ##
+    #  volumeClaimTemplate:
+    #    spec:
+    #      storageClassName: gluster
+    #      accessModes: ["ReadWriteOnce"]
+    #      resources:
+    #        requests:
+    #          storage: 50Gi
+    #    selector: {}
 
     ## Using tmpfs volume
     ##
@@ -4258,16 +4137,13 @@ thanosRuler:
     ##
     type: ClusterIP
 
-  ## Configuration for creating a ServiceMonitor for the ThanosRuler service
+  ## If true, create a serviceMonitor for thanosRuler
   ##
   serviceMonitor:
-    ## If true, create a serviceMonitor for thanosRuler
-    ##
-    selfMonitor: true
-
     ## Scrape interval. If not set, the Prometheus default scrape interval is used.
     ##
     interval: ""
+    selfMonitor: true
 
     ## Additional labels
     ##
@@ -4345,7 +4221,7 @@ thanosRuler:
     image:
       registry: quay.io
       repository: thanos/thanos
-      tag: v0.34.1
+      tag: v0.34.0
       sha: ""
 
     ## Namespaces to be selected for PrometheusRules discovery.
