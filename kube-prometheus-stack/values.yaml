@@ -1972,8 +1972,7 @@ nodeExporter:
 ##
 prometheus-node-exporter:
 
-  services:
-    port: 9101
+
   enabled: true
 
   namespaceOverride: ""
