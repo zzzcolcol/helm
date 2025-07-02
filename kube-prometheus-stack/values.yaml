@@ -1960,13 +1960,13 @@ kube-state-metrics:
 
 ## Deploy node exporter as a daemonset to all nodes
 ##
-nodeExporter:
-  enabled: true
-  operatingSystems:
-    linux:
-      enabled: true
-    darwin:
-      enabled: true
+# nodeExporter:
+#   enabled: true
+#   operatingSystems:
+#     linux:
+#       enabled: true
+#     darwin:
+#       enabled: true
 
 ## Configuration for prometheus-node-exporter subchart
 ##
